@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Razorpay test checkout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font: 14px system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; }
+  fieldset { margin-bottom: 16px; }
+  input { width: 100%; padding: 6px; margin: 4px 0 8px; box-sizing: border-box; }
+  button { padding: 8px 14px; margin-right: 8px; }
+  pre { background: #111; color: #0f0; padding: 12px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<h2>Razorpay test-mode checkout</h2>
+<p>Serve this page from <code>http://localhost:5173</code> (the only origin the backend's CORS allows).</p>
+
+<fieldset>
+  <legend>0. Login</legend>
+  <input id="email" placeholder="email">
+  <input id="password" type="password" placeholder="password">
+  <button id="login">Login</button>
+</fieldset>
+
+<fieldset>
+  <legend>1. Order and Razorpay order</legend>
+  <input id="orderId" placeholder="order UUID (leave blank to create one from your cart)">
+  <button id="create">Create Razorpay order</button>
+</fieldset>
+
+<fieldset>
+  <legend>2. Pay</legend>
+  <button id="pay" disabled>Open Razorpay Checkout</button>
+</fieldset>
+
+<fieldset>
+  <legend>3. Captured values</legend>
+  <pre id="values">(none yet)</pre>
+  <button id="verify" disabled>POST /api/payments/verify</button>
+</fieldset>
+
+<h3>Log</h3>
+<pre id="log"></pre>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const API = "http://localhost:3000/api";
+const $ = (id) => document.getElementById(id);
+let token = null, checkout = null, captured = null;
+
+function log(label, obj) {
+  $("log").textContent += `\n[${label}] ` + (typeof obj === "string" ? obj : JSON.stringify(obj, null, 2)) + "\n";
+}
+
+async function api(path, body) {
+  const res = await fetch(API + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token && { Authorization: `Bearer ${token}` }) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  log(`${res.status} POST ${path}`, json);
+  if (!res.ok) throw new Error(json.message || res.statusText);
+  return json.data ?? json; // unwrap if a response interceptor wraps in {data}
+}
+
+$("login").onclick = async () => {
+  const r = await api("/auth/login", { email: $("email").value, password: $("password").value });
+  token = r.accessToken ?? r.access_token ?? r.token;
+  if (!token) return log("error", "No token found in login response; check the log above.");
+  log("auth", "logged in");
+};
+
+$("create").onclick = async () => {
+  let orderId = $("orderId").value.trim();
+  if (!orderId) {
+    const o = await api("/orders");
+    orderId = o.id ?? o.order?.id;
+    $("orderId").value = orderId;
+  }
+  checkout = await api("/payments/create", { orderId });
+  $("pay").disabled = false;
+};
+
+$("pay").onclick = () => {
+  const rzp = new Razorpay({
+    key: checkout.keyId,
+    amount: checkout.amount,
+    currency: checkout.currency,
+    order_id: checkout.razorpayOrderId,
+    name: "Auto Parts (test)",
+    handler(resp) {
+      captured = {
+        razorpay_order_id: resp.razorpay_order_id,
+        razorpay_payment_id: resp.razorpay_payment_id,
+        razorpay_signature: resp.razorpay_signature,
+      };
+      $("values").textContent = JSON.stringify(captured, null, 2);
+      $("verify").disabled = false;
+    },
+  });
+  rzp.on("payment.failed", (r) => log("payment.failed", r.error));
+  rzp.open();
+};
+
+$("verify").onclick = () => api("/payments/verify", captured);
+
+for (const id of ["login", "create", "pay", "verify"]) {
+  const h = $(id).onclick;
+  $(id).onclick = (e) => Promise.resolve(h(e)).catch((err) => log("error", err.message));
+}
+</script>
+</body>
+</html>
