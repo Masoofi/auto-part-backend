@@ -86,6 +86,8 @@ model User {
   isActive  Boolean  @default(true)
   cart Cart?
   orders Order[]
+  passwordResetTokenHash String?   @unique
+  passwordResetExpiresAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

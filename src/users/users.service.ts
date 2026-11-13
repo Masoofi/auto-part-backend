@@ -1,5 +1,5 @@
-import { IsIn } from 'class-validator';
-import { UpdateUserRoleDto } from './dto/update-user.dto.js';
+import { IsIn } from "class-validator";
+import { UpdateUserRoleDto } from "./dto/update-user.dto.js";
 import {
   Injectable,
   ConflictException,
@@ -175,10 +175,26 @@ export class UsersService {
         phone,
         role,
         isActive,
-      }
+      },
     });
 
     const { password: _, ...result } = user;
     return result;
   }
+
+  async updatePasswordResetToken(
+    userId: string,
+    hashedToken: string,
+    expiresAt: Date,
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordResetTokenHash: hashedToken,
+        passwordResetExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  
 }

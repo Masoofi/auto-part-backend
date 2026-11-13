@@ -9,6 +9,7 @@ import { ResponseInterceptor } from './interceptors/response.interceptor.js';
 import { HttpExceptionFilter } from './filters/http-exception.filter.js';
 import { PermissionGuard } from './guards/permission.guard.js';
 import { AuthGuard } from './guards/auth.guard.js';
+import { CacheManagerModule } from './cache-manager/cache-manager.module.js';
 
 
 @Global()
@@ -35,6 +36,8 @@ import { AuthGuard } from './guards/auth.guard.js';
     SharedService,
     AuthGuard,
     PermissionGuard,
+    CacheManagerModule,
   ],
+  imports: [CacheManagerModule],
 })
 export class SharedModule {}
