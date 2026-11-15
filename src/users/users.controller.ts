@@ -32,7 +32,6 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserRoleDto) {
     return this.usersService.update(id, updateUserDto);

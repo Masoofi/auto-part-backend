@@ -10,8 +10,14 @@ async function bootstrap() {
 
   app.setGlobalPrefix("api");
 
+  // FRONTEND_URL may hold several comma-separated origins (e.g. prod + preview).
+  const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+
   app.enableCors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
   });
 
   app.useGlobalPipes(

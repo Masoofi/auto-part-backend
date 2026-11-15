@@ -1,5 +1,10 @@
 
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
 
@@ -9,8 +14,14 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL is not configured');
+    }
+
     const adapter = new PrismaPg({
-      connectionString: process.env.DATABASE_URL!,
+      connectionString: databaseUrl,
     });
 
     super({ adapter });
@@ -18,6 +29,7 @@ export class PrismaService
 
   async onModuleInit() {
     await this.$connect();
+    console.log('PostgreSQL connected successfully');
   }
 
   async onModuleDestroy() {

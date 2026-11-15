@@ -2779,8 +2779,10 @@ async function bootstrap() {
         rawBody: true
     });
     app.setGlobalPrefix("api");
+    // FRONTEND_URL may hold several comma-separated origins (e.g. prod + preview).
+    const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:5173").split(",").map((origin)=>origin.trim().replace(/\/$/, "")).filter(Boolean);
     app.enableCors({
-        origin: "http://localhost:5173"
+        origin: allowedOrigins
     });
     app.useGlobalPipes(new _nestjs_common__rspack_import_2.ValidationPipe({
         whitelist: true,
@@ -4558,13 +4560,18 @@ function _ts_metadata(metadataKey, metadataValue) {
 class PrismaService extends _generated_prisma_client_js__rspack_import_2.PrismaClient {
     async onModuleInit() {
         await this.$connect();
+        console.log('PostgreSQL connected successfully');
     }
     async onModuleDestroy() {
         await this.$disconnect();
     }
     constructor(){
+        const databaseUrl = process.env.DATABASE_URL;
+        if (!databaseUrl) {
+            throw new Error('DATABASE_URL is not configured');
+        }
         const adapter = new _prisma_adapter_pg__rspack_import_1.PrismaPg({
-            connectionString: process.env.DATABASE_URL
+            connectionString: databaseUrl
         });
         super({
             adapter
@@ -5881,7 +5888,6 @@ _ts_decorate([
 ], UsersController.prototype, "findOne", null);
 _ts_decorate([
     (0,_nestjs_common__rspack_import_0.UseGuards)(_shared_shared_guards_auth_guard_js__rspack_import_1.AuthGuard, _shared_shared_guards_roles_guard_js__rspack_import_2.RolesGuard),
-    (0,_shared_shared_decorators_roles_decorator_js__rspack_import_3.Roles)('ADMIN'),
     (0,_nestjs_common__rspack_import_0.Patch)(':id'),
     _ts_param(0, (0,_nestjs_common__rspack_import_0.Param)('id')),
     _ts_param(1, (0,_nestjs_common__rspack_import_0.Body)()),
