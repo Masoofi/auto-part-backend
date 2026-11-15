@@ -1214,6 +1214,9 @@ function _ts_metadata(metadataKey, metadataValue) {
 class AuthService {
     async login(loginDto) {
         const { email, password } = loginDto;
+        console.log("LOGIN BODY:", loginDto);
+        console.log("EMAIL:", loginDto?.email);
+        console.log("PASSWORD TYPE:", typeof loginDto?.password);
         // Find user
         const user = await this.usersService.findByEmail(email);
         if (!user) {

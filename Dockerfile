@@ -19,5 +19,5 @@ RUN npm run build
 # Production port
 EXPOSE 3000
 
-# Start production application
-CMD ["npm", "run", "start:prod"]
+# Apply pending DB migrations, then start the production application
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
