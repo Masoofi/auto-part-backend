@@ -10,11 +10,14 @@ import { CreateProductDto } from "./dto/create-product.dto.js";
 import { UpdateProductDto } from "./dto/update-product.dto.js";
 import { ProductQueryDto } from "./dto/product-query.dto.js";
 import type { Prisma } from "../generated/prisma/client.js";
+import { CloudinaryService } from "../cloudinary/cloudinary.service.js";
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
-
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
   async findAll(
     query: ProductQueryDto = {
       page: 1,
@@ -255,5 +258,90 @@ export class ProductsService {
       data,
       include: { category: true },
     });
+  }
+
+  async updateProductImage(productId: string, file: Express.Multer.File) {
+    // 1. Find existing product
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: { category: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException("Product not found");
+    }
+
+    // 2. Upload new image
+    const uploadedImage = await this.cloudinaryService.uploadImage(
+      file,
+      "auto-parts/products",
+    );
+
+    try {
+      // 3. Update image details in PostgreSQL
+      const updatedProduct = await this.prisma.product.update({
+        where: { id: productId },
+        data: {
+          imageUrl: uploadedImage.url,
+          imagePublicId: uploadedImage.publicId,
+        },
+        include: { category: true },
+      });
+
+      // 4. Delete previous image after successful database update
+      if (product.imagePublicId) {
+        try {
+          await this.cloudinaryService.deleteImage(product.imagePublicId);
+        } catch (error) {
+          // Database update succeeded; old image cleanup can be retried.
+          console.error("Old Cloudinary image cleanup failed:", error);
+        }
+      }
+
+      // 5. Return updated product
+      return {
+        message: "Product image updated successfully",
+        product: updatedProduct,
+      };
+    } catch (error) {
+      // Clean up newly uploaded image if database update fails
+      try {
+        await this.cloudinaryService.deleteImage(uploadedImage.publicId);
+      } catch (cleanupError) {
+        console.error("New Cloudinary image cleanup failed:", cleanupError);
+      }
+
+      throw error;
+    }
+  }
+
+  async deleteProductImage(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException("Product not found");
+    }
+
+    if (!product.imagePublicId) {
+      throw new NotFoundException("Product image not found");
+    }
+
+    // Delete image from Cloudinary
+    await this.cloudinaryService.deleteImage(product.imagePublicId);
+
+    // Remove image details from database
+    await this.prisma.product.update({
+      where: { id },
+      data: {
+        imageUrl: null,
+        imagePublicId: null,
+      },
+    });
+
+    return {
+      message: "Product image deleted successfully",
+    };
   }
 }

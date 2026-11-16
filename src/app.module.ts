@@ -19,6 +19,7 @@ import { CartModule } from './cart/cart.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { StatsModule } from './stats/stats.module.js';
+import { CloudinaryModule } from './cloudinary/cloudinary.module.js';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { StatsModule } from './stats/stats.module.js';
     OrdersModule,
     PaymentsModule,
     StatsModule,
+    CloudinaryModule,
   ],
   controllers: [AppController, CategoriesController, ProductsController, UsersController],
   providers: [

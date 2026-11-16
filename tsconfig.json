@@ -17,17 +17,10 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": [
-      "vitest/globals",
-      "node"
-    ],
+    "types": ["vitest/globals", "node", "express", "multer"],
     "paths": {
-      "@shared/shared": [
-        "./libs/shared/src"
-      ],
-      "@shared/shared/*": [
-        "./libs/shared/src/*"
-      ]
+      "@shared/shared": ["./libs/shared/src"],
+      "@shared/shared/*": ["./libs/shared/src/*"]
     }
   }
 }
